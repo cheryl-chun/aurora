@@ -1,5 +1,4 @@
 use anyhow::{bail, Context, Result};
-#[cfg(target_os = "macos")]
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::AppHandle;
 use tauri_plugin_clipboard_manager::ClipboardExt;
