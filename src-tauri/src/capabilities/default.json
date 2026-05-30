@@ -1,0 +1,22 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Default permissions for Aurora desktop windows",
+  "windows": ["main", "translate-popup"],
+  "permissions": [
+    "core:default",
+    "opener:default",
+
+    "global-shortcut:allow-register",
+    "global-shortcut:allow-unregister",
+    "global-shortcut:allow-is-registered",
+
+    "clipboard-manager:allow-read-text",
+    "clipboard-manager:allow-write-text",
+
+    "core:event:allow-emit",
+    "core:event:allow-listen",
+
+    "core:webview:allow-create-webview-window"
+  ]
+}
