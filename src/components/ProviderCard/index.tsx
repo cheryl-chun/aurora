@@ -1,9 +1,10 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { ApiProvider, ApiProviderType } from '../../types/api';
+import type { ApiProvider, ApiProviderType } from '../../types/api';
 import { ChevronDownIcon, DotsHandleIcon, TrashIcon } from '../icons';
 import { useState } from 'react';
 import { DEFAULT_TRANSLATION_PROMPT } from '../../constants/prompt';
+import { useTranslation } from 'react-i18next';
 
 type ProviderCardProps = {
   provider: ApiProvider;
@@ -13,6 +14,7 @@ type ProviderCardProps = {
 };
 
 export default function ProviderCard({ provider, index, onChange, onRemove }: ProviderCardProps) {
+  const { t } = useTranslation();
   const [collapsed, setCollapsed] = useState(true);
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -43,22 +45,24 @@ export default function ProviderCard({ provider, index, onChange, onRemove }: Pr
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <div className="truncate text-sm font-semibold text-slate-950">
-              {provider.name || '未命名 API'}
+              {provider.name || t('api.unnamed')}
             </div>
 
             <span className="shrink-0 rounded-md bg-slate-100 px-2 py-0.5 text-xs text-slate-500">
-              {provider.provider_type === 'llm' ? 'LLM' : '翻译'}
+              {provider.provider_type === 'llm'
+                ? t('api.providerTypeLlm')
+                : t('api.providerTypeTranslator')}
             </span>
 
             {!provider.enabled && (
               <span className="shrink-0 rounded-md bg-slate-100 px-2 py-0.5 text-xs text-slate-400">
-                已停用
+                {t('api.disabled')}
               </span>
             )}
           </div>
 
           <div className="mt-1 truncate text-xs text-slate-500">
-            {provider.base_url || '尚未配置 Base URL'}
+            {provider.base_url || t('api.baseUrlNotConfigured')}
           </div>
         </div>
 
@@ -67,7 +71,7 @@ export default function ProviderCard({ provider, index, onChange, onRemove }: Pr
             type="button"
             onClick={() => setCollapsed(value => !value)}
             className="flex h-8 w-8 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-            aria-label={collapsed ? '展开卡片' : '折叠卡片'}
+            aria-label={collapsed ? t('api.expandCard') : t('api.collapseCard')}
           >
             <span
               className={['transition-transform', collapsed ? '-rotate-90' : 'rotate-0'].join(' ')}
@@ -80,7 +84,7 @@ export default function ProviderCard({ provider, index, onChange, onRemove }: Pr
             type="button"
             onClick={() => onRemove(provider.id)}
             className="flex h-8 w-8 items-center justify-center rounded-md text-slate-400 hover:bg-red-50 hover:text-red-600"
-            aria-label="删除"
+            aria-label={t('api.delete')}
           >
             <TrashIcon />
           </button>
@@ -88,7 +92,7 @@ export default function ProviderCard({ provider, index, onChange, onRemove }: Pr
           <button
             type="button"
             className="flex h-8 w-8 cursor-grab items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 active:cursor-grabbing"
-            aria-label="拖动排序"
+            aria-label={t('api.dragToSort')}
             {...attributes}
             {...listeners}
           >
@@ -111,12 +115,12 @@ export default function ProviderCard({ provider, index, onChange, onRemove }: Pr
                 }
                 className="h-4 w-4 rounded border-slate-300"
               />
-              启用这个 API
+              {t('api.enabled')}
             </label>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <Field label="名称">
+            <Field label={t('api.name')}>
               <input
                 value={provider.name}
                 onChange={event => onChange(provider.id, { name: event.currentTarget.value })}
@@ -125,7 +129,7 @@ export default function ProviderCard({ provider, index, onChange, onRemove }: Pr
               />
             </Field>
 
-            <Field label="类型">
+            <Field label={t('api.type')}>
               <div className="select-wrap">
                 <select
                   value={provider.provider_type}
@@ -143,13 +147,13 @@ export default function ProviderCard({ provider, index, onChange, onRemove }: Pr
                   }}
                   className="select-input"
                 >
-                  <option value="llm">LLM API</option>
-                  <option value="translator">翻译 API</option>
+                  <option value="llm">{t('api.llmApi')}</option>
+                  <option value="translator">{t('api.translatorApi')}</option>
                 </select>
               </div>
             </Field>
 
-            <Field label="Base URL">
+            <Field label={t('api.baseUrl')}>
               <input
                 value={provider.base_url}
                 onChange={event =>
@@ -163,7 +167,7 @@ export default function ProviderCard({ provider, index, onChange, onRemove }: Pr
             </Field>
 
             {isLlm && (
-              <Field label="Model">
+              <Field label={t('api.model')}>
                 <input
                   value={provider.model ?? ''}
                   onChange={event =>
@@ -179,7 +183,7 @@ export default function ProviderCard({ provider, index, onChange, onRemove }: Pr
 
             {isLlm && (
               <div className="col-span-2">
-                <Field label="Prompt 模板">
+                <Field label={t('api.promptTemplate')}>
                   <textarea
                     value={provider.prompt_template ?? ''}
                     onChange={event =>
@@ -188,18 +192,18 @@ export default function ProviderCard({ provider, index, onChange, onRemove }: Pr
                       })
                     }
                     className="min-h-40 w-full resize-y rounded-md border border-slate-200 bg-white px-3 py-2 text-sm leading-6 text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
-                    placeholder="使用 {{text}} 表示待翻译文本"
+                    placeholder={t('api.promptPlaceholder', { placeholder: '{{text}}' })}
                   />
                 </Field>
 
                 <p className="mt-1 text-xs text-slate-400">
-                  使用 {'{{text}}'} 作为待翻译文本占位符。
+                  {t('api.promptHelp', { placeholder: '{{text}}' })}
                 </p>
               </div>
             )}
 
             <div className="col-span-2">
-              <Field label="API Key">
+              <Field label={t('api.apiKey')}>
                 <input
                   type="password"
                   value={provider.api_key}

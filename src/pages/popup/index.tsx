@@ -6,6 +6,7 @@ import { toast } from '../../utils/toast';
 import { Pin, PinOff } from 'lucide-react';
 import Toast from '../../components/Toast';
 import { defaultSettings, type AppSettings } from '../../types/settings';
+import { useTranslation } from 'react-i18next';
 
 type PopupPayload = {
   status: 'translating' | 'done' | 'error';
@@ -29,6 +30,8 @@ function PopupPage() {
   const [pinned, setPinned] = useState(false);
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
   const appWindow = getCurrentWindow();
+
+  const { t } = useTranslation();
 
   useEffect(() => {
     let disposed = false;
@@ -80,16 +83,16 @@ function PopupPage() {
     const text = payload?.translatedText?.trim();
 
     if (!text) {
-      toast.info('没有可复制的译文');
+      toast.info(t('popup.noResultToCopy'));
       return;
     }
 
     try {
       await navigator.clipboard.writeText(text);
-      toast.success('已复制译文');
+      toast.success(t('popup.copied'));
     } catch (error) {
       console.error('[popup] copy failed', error);
-      toast.error(`复制失败：${String(error)}`);
+      toast.error(t('popup.copyFailed', { message: String(error) }));
     }
   }
 
@@ -130,7 +133,7 @@ function PopupPage() {
               onMouseDown={handleStartDrag}
               className="flex h-full min-w-0 flex-1 cursor-move items-center px-4"
             >
-              <h1 className="truncate text-sm font-semibold">Aurora 翻译</h1>
+              <h1 className="truncate text-sm font-semibold">{t('popup.title')}</h1>
             </div>
 
             <div className="flex h-full shrink-0 items-center gap-1 px-2">
@@ -141,8 +144,8 @@ function PopupPage() {
                   'flex h-8 w-8 items-center justify-center rounded-md hover:bg-slate-100',
                   pinned ? 'text-slate-950' : 'text-slate-500 hover:text-slate-900',
                 ].join(' ')}
-                aria-label={pinned ? '取消钉住' : '钉住窗口'}
-                title={pinned ? '取消钉住' : '钉住窗口'}
+                aria-label={pinned ? t('popup.unpin') : t('popup.pin')}
+                title={pinned ? t('popup.unpin') : t('popup.pin')}
               >
                 {pinned ? <PinOff size={17} /> : <Pin size={17} />}
               </button>
@@ -151,8 +154,8 @@ function PopupPage() {
                 onClick={copyTranslatedText}
                 disabled={!payload?.translatedText?.trim()}
                 className="flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-900 disabled:pointer-events-none disabled:opacity-30"
-                aria-label="复制译文"
-                title="复制译文"
+                aria-label={t('popup.copyResult')}
+                title={t('popup.copyResult')}
               >
                 ⧉
               </button>
@@ -161,8 +164,8 @@ function PopupPage() {
                 type="button"
                 onClick={closePopup}
                 className="flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-                aria-label="关闭"
-                title="关闭"
+                aria-label={t('common.close')}
+                title={t('common.close')}
               >
                 ×
               </button>
@@ -181,7 +184,7 @@ function PopupPage() {
                   </>
                 )}
 
-                {payload.status === 'translating' && <LoadingText text="正在翻译..." />}
+                {payload.status === 'translating' && <LoadingText text={t('popup.translating')} />}
 
                 {payload.status === 'done' && <TextBlock text={payload.translatedText ?? ''} />}
 
@@ -229,9 +232,11 @@ function PopupPage() {
 }
 
 function EmptyState() {
+  const { t } = useTranslation();
+
   return (
     <div className="flex h-full items-center justify-center text-sm text-slate-400">
-      等待翻译内容
+      {t('popup.waiting')}
     </div>
   );
 }
@@ -248,6 +253,7 @@ function LoadingText({ text }: { text: string }) {
 }
 
 function TextBlock({ text, muted = false }: { text: string; muted?: boolean }) {
+  const { t } = useTranslation();
   return (
     <p
       className={[
@@ -255,7 +261,7 @@ function TextBlock({ text, muted = false }: { text: string; muted?: boolean }) {
         muted ? 'text-slate-500' : 'text-slate-950',
       ].join(' ')}
     >
-      {text || '空'}
+      {text || t('common.empty')}
     </p>
   );
 }
