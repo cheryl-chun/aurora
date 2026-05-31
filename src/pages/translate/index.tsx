@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { toast } from '../../utils/toast';
 import { useSelectionTranslateShortcut } from '../../hooks/useSelectionTranslateShortcut';
 import type { AppSettings } from '../../types/settings';
+import { useTranslation } from 'react-i18next';
 
 const languages = [
   { value: 'auto', label: '自动检测' },
@@ -21,6 +22,8 @@ function TranslatePage({ settings }: { settings: AppSettings }) {
   const [translatedText, setTranslatedText] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const { t } = useTranslation();
+
   useEffect(() => {
     setSourceLanguage(settings.sourceLanguage);
     setTargetLanguage(settings.targetLanguage);
@@ -37,7 +40,7 @@ function TranslatePage({ settings }: { settings: AppSettings }) {
     const text = sourceText.trim();
 
     if (!text) {
-      toast.info('请输入要翻译的文本');
+      toast.info(t('toast.inputRequired'));
       return;
     }
 
@@ -53,7 +56,7 @@ function TranslatePage({ settings }: { settings: AppSettings }) {
 
       setTranslatedText(result);
     } catch (error) {
-      toast.error(`翻译失败：${String(error)}`);
+      toast.error(t('toast.translateFailed', { message: String(error) }));
     } finally {
       setLoading(false);
     }
@@ -61,15 +64,15 @@ function TranslatePage({ settings }: { settings: AppSettings }) {
 
   async function handleCopy() {
     if (!translatedText.trim()) {
-      toast.info('没有可复制的译文');
+      toast.info(t('toast.noResultToCopy'));
       return;
     }
 
     try {
       await navigator.clipboard.writeText(translatedText);
-      toast.success('已复制译文');
+      toast.success(t('toast.copied'));
     } catch (error) {
-      toast.error(`复制失败：${String(error)}`);
+      toast.error(t('toast.translateFailed', { message: String(error) }));
     }
   }
 
@@ -82,8 +85,8 @@ function TranslatePage({ settings }: { settings: AppSettings }) {
     <div className="flex min-h-full flex-col px-8 py-7">
       <header className="mb-6 flex items-start justify-between gap-6">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-950">翻译</h1>
-          <p className="mt-1 text-sm text-slate-500">输入文本并使用已配置的 API 翻译。</p>
+          <h1>{t('translate.title')}</h1>
+          <p>{t('translate.description')}</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -124,28 +127,28 @@ function TranslatePage({ settings }: { settings: AppSettings }) {
       <section className="grid min-h-0 flex-1 grid-cols-2 gap-4">
         <div className="flex min-h-[420px] flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
           <div className="flex h-11 items-center justify-between border-b border-slate-100 px-4 text-sm text-slate-500">
-            <span>原文</span>
-            <span>{sourceText.length} 字符</span>
+            <span>{t('translate.source')}</span>
+            <span>{t('translate.characters', { count: sourceText.length })}</span>
           </div>
 
           <textarea
             value={sourceText}
             onChange={event => setSourceText(event.currentTarget.value)}
-            placeholder="输入或粘贴要翻译的文本"
+            placeholder={t('translate.inputPlaceholder')}
             className="min-h-0 flex-1 resize-none border-0 bg-white p-4 text-sm leading-7 text-slate-950 outline-none placeholder:text-slate-400"
           />
         </div>
 
         <div className="flex min-h-[420px] flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
           <div className="flex h-11 items-center justify-between border-b border-slate-100 px-4 text-sm text-slate-500">
-            <span>译文</span>
+            <span>{t('translate.result')}</span>
 
             <button
               type="button"
               onClick={handleCopy}
               className="rounded-md px-2 py-1 text-sm text-blue-600 hover:bg-blue-50"
             >
-              复制
+              {t('common.copy')}
             </button>
           </div>
 
@@ -154,13 +157,13 @@ function TranslatePage({ settings }: { settings: AppSettings }) {
               <div className="flex h-full items-center justify-center text-slate-500">
                 <div className="flex items-center gap-2">
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-900" />
-                  <span>翻译中...</span>
+                  <span>{t('translate.translating')}</span>
                 </div>
               </div>
             ) : translatedText ? (
               translatedText
             ) : (
-              <span className="text-slate-400">译文会显示在这里</span>
+              <span className="text-slate-400">{t('translate.resultPlaceholder')}</span>
             )}
           </div>
         </div>
@@ -172,7 +175,7 @@ function TranslatePage({ settings }: { settings: AppSettings }) {
           onClick={handleClear}
           className="h-9 rounded-md border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-100"
         >
-          清空
+          {t('translate.clear')}
         </button>
 
         <button
@@ -181,7 +184,7 @@ function TranslatePage({ settings }: { settings: AppSettings }) {
           disabled={loading}
           className="h-9 rounded-md bg-slate-950 px-5 text-sm font-medium text-white shadow-sm hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {loading ? '翻译中...' : '翻译'}
+          {loading ? t('translate.translating') : t('translate.translate')}
         </button>
       </footer>
     </div>

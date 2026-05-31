@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useTranslation } from "react-i18next";
 import {
   DndContext,
   PointerSensor,
@@ -21,6 +22,7 @@ import { DEFAULT_TRANSLATION_PROMPT } from "../../constants/prompt";
 import { toast } from "../../utils/toast";
 
 function ApiPage() {
+  const { t } = useTranslation();
   const [providers, setProviders] = useState<ApiProvider[]>([]);
 
   const sensors = useSensors(
@@ -40,7 +42,7 @@ function ApiPage() {
       const data = await invoke<ApiProvider[]>("load_api_providers");
       setProviders(data.sort((a, b) => a.priority - b.priority));
     } catch (error) {
-      toast.error(`加载失败：${String(error)}`);
+      toast.error(t("api.loadFailed", { message: String(error) }));
     }
   }
 
@@ -56,9 +58,9 @@ function ApiPage() {
       });
 
       setProviders(normalized);
-      toast.success("已保存");
+      toast.success(t("api.saveSuccess"));
     } catch (error) {
-      toast.error(`保存失败：${String(error)}`);
+      toast.error(t("api.saveFailed", { message: String(error) }));
     }
   }
 
@@ -110,9 +112,9 @@ function ApiPage() {
     <div className="min-h-full bg-slate-50 px-8 py-7 text-slate-950">
       <header className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">API 管理</h1>
+          <h1 className="text-2xl font-semibold">{t("api.title")}</h1>
           <p className="mt-1 text-sm text-slate-500">
-            管理翻译服务、LLM 服务和调用优先级。
+            {t("api.description")}
           </p>
         </div>
 
@@ -122,7 +124,7 @@ function ApiPage() {
             className="inline-flex h-9 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-100"
           >
             <PlusIcon />
-            新增
+            {t("api.add")}
           </button>
 
           <button
@@ -130,7 +132,7 @@ function ApiPage() {
             className="inline-flex h-9 items-center gap-2 rounded-md bg-slate-950 px-3 text-sm font-medium text-white shadow-sm hover:bg-slate-800"
           >
             <SaveIcon />
-            保存
+            {t("api.save")}
           </button>
         </div>
       </header>
@@ -160,7 +162,7 @@ function ApiPage() {
 
       {providers.length === 0 && (
         <div className="rounded-lg border border-dashed border-slate-300 bg-white px-6 py-10 text-center text-sm text-slate-500">
-          还没有 API 配置。
+          {t("api.empty")}
         </div>
       )}
     </div>

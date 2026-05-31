@@ -1,16 +1,23 @@
 import { invoke } from '@tauri-apps/api/core';
 import { toast } from '../../utils/toast';
-import type { AppSettings } from '../../types/settings';
+import type { AppLanguage, AppSettings } from '../../types/settings';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 
 const languages = [
-  { value: 'auto', label: '自动检测' },
-  { value: 'zh-CN', label: '简体中文' },
-  { value: 'en', label: '英语' },
-  { value: 'ja', label: '日语' },
-  { value: 'ko', label: '韩语' },
-  { value: 'fr', label: '法语' },
-  { value: 'de', label: '德语' },
+  { value: 'auto', labelKey: 'languages.auto' },
+  { value: 'zh-CN', labelKey: 'languages.zh-CN' },
+  { value: 'en', labelKey: 'languages.en' },
+  { value: 'ja', labelKey: 'languages.ja' },
+  { value: 'ko', labelKey: 'languages.ko' },
+  { value: 'fr', labelKey: 'languages.fr' },
+  { value: 'de', labelKey: 'languages.de' },
+];
+
+const appLanguages: Array<{ value: AppLanguage; labelKey: string }> = [
+  { value: 'zh-CN', labelKey: 'languages.zh-CN' },
+  { value: 'en', labelKey: 'languages.en' },
 ];
 
 function SettingsPage({
@@ -20,6 +27,7 @@ function SettingsPage({
   settings: AppSettings;
   onSettingsChange: (settings: AppSettings) => void;
 }) {
+  const { t } = useTranslation();
   const [recordingShortcut, setRecordingShortcut] = useState<'selection' | 'append' | null>(null);
 
   useEffect(() => {
@@ -60,24 +68,25 @@ function SettingsPage({
 
   async function updateSettings(next: AppSettings) {
     onSettingsChange(next);
+    void i18n.changeLanguage(next.appLanguage);
 
     try {
       await invoke('save_app_settings', { appSettings: next });
-      toast.success('设置已保存');
+      toast.success(t('settings.saved'));
     } catch (error) {
-      toast.error(`保存设置失败：${String(error)}`);
+      toast.error(t('settings.saveFailed', { message: String(error) }));
     }
   }
 
   return (
     <div className="flex min-h-full flex-col px-8 py-7">
       <header className="mb-6">
-        <h1 className="text-2xl font-semibold text-slate-950">设置</h1>
+        <h1 className="text-2xl font-semibold text-slate-950">{t('settings.title')}</h1>
       </header>
 
       <section className="grid max-w-2xl gap-5">
         <div className="grid gap-2">
-          <span className="text-sm font-medium text-slate-700">划词翻译快捷键</span>
+          <span className="text-sm font-medium text-slate-700">{t('settings.selectionShortcut')}</span>
 
           <div className="flex gap-2">
             <button
@@ -90,7 +99,9 @@ function SettingsPage({
                   : 'border-slate-200 bg-white text-slate-950 hover:bg-slate-50',
               ].join(' ')}
             >
-              {recordingShortcut === 'selection' ? '请按下新的快捷键...' : settings.selectionShortcut}
+              {recordingShortcut === 'selection'
+                ? t('settings.recordingShortcut')
+                : settings.selectionShortcut}
             </button>
 
             <button
@@ -103,13 +114,13 @@ function SettingsPage({
               }
               className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 hover:bg-slate-50"
             >
-              重置
+              {t('common.reset')}
             </button>
           </div>
         </div>
 
         <div className="grid gap-2">
-          <span className="text-sm font-medium text-slate-700">追加选区快捷键</span>
+          <span className="text-sm font-medium text-slate-700">{t('settings.appendShortcut')}</span>
 
           <div className="flex gap-2">
             <button
@@ -123,7 +134,7 @@ function SettingsPage({
               ].join(' ')}
             >
               {recordingShortcut === 'append'
-                ? '请按下新的快捷键...'
+                ? t('settings.recordingShortcut')
                 : settings.appendSelectionShortcut}
             </button>
 
@@ -137,14 +148,14 @@ function SettingsPage({
               }
               className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 hover:bg-slate-50"
             >
-              重置
+              {t('common.reset')}
             </button>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <label className="grid gap-2">
-            <span className="text-sm font-medium text-slate-700">默认源语言</span>
+            <span className="text-sm font-medium text-slate-700">{t('settings.sourceLanguage')}</span>
             <select
               value={settings.sourceLanguage}
               onChange={event =>
@@ -154,14 +165,14 @@ function SettingsPage({
             >
               {languages.map(item => (
                 <option key={item.value} value={item.value}>
-                  {item.label}
+                  {t(item.labelKey)}
                 </option>
               ))}
             </select>
           </label>
 
           <label className="grid gap-2">
-            <span className="text-sm font-medium text-slate-700">默认目标语言</span>
+            <span className="text-sm font-medium text-slate-700">{t('settings.targetLanguage')}</span>
             <select
               value={settings.targetLanguage}
               onChange={event =>
@@ -173,7 +184,7 @@ function SettingsPage({
                 .filter(item => item.value !== 'auto')
                 .map(item => (
                   <option key={item.value} value={item.value}>
-                    {item.label}
+                    {t(item.labelKey)}
                   </option>
                 ))}
             </select>
@@ -181,7 +192,7 @@ function SettingsPage({
         </div>
 
         <label className="flex items-center justify-between rounded-md border border-slate-200 bg-white px-4 py-3">
-          <span className="text-sm font-medium text-slate-700">Popup 显示原文</span>
+          <span className="text-sm font-medium text-slate-700">{t('settings.showSourceText')}</span>
           <input
             type="checkbox"
             checked={settings.showSourceText}
@@ -189,6 +200,31 @@ function SettingsPage({
               updateSettings({ ...settings, showSourceText: event.currentTarget.checked })
             }
           />
+        </label>
+
+        <label className="grid gap-2">
+          <span className="text-sm font-medium text-slate-700">{t('settings.appLanguage')}</span>
+
+          <select
+            value={settings.appLanguage}
+            onChange={event => {
+              const appLanguage = event.currentTarget.value as AppLanguage;
+
+              void i18n.changeLanguage(appLanguage);
+
+              updateSettings({
+                ...settings,
+                appLanguage,
+              });
+            }}
+            className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm"
+          >
+            {appLanguages.map(item => (
+              <option key={item.value} value={item.value}>
+                {t(item.labelKey)}
+              </option>
+            ))}
+          </select>
         </label>
       </section>
     </div>

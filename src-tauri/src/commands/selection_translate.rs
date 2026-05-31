@@ -2,11 +2,9 @@ use tauri::{AppHandle, Manager, State};
 
 use crate::{
     commands::{
-        popup::{publish_popup_payload, PopupPayload, PopupState},
+        popup::{PopupPayload, PopupState, publish_popup_payload},
         selection::capture_selected_text_inner,
-    },
-    state::AppState,
-    translator::{manager::TranslatorManager, types::TranslatorRequest},
+    }, models::error::AppError, state::AppState, translator::{manager::TranslatorManager, types::TranslatorRequest}
 };
 
 #[tauri::command]

@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 export type Page = "translate" | "api" | "settings" | "about";
 
 type SidebarProps = {
@@ -6,13 +8,16 @@ type SidebarProps = {
 };
 
 const pages: Array<{ id: Page; label: string }> = [
-  { id: "translate", label: "翻译" },
-  { id: "api", label: "API" },
-  { id: "settings", label: "设置" },
-  { id: "about", label: "关于" },
+  { id: "translate", label: 'sidebar.translate' },
+  { id: "api", label: 'sidebar.api' },
+  { id: "settings", label: 'sidebar.settings' },
+  { id: "about", label: 'sidebar.about' },
 ];
 
 function Sidebar({ activePage, onPageChange }: SidebarProps) {
+
+  const { t } = useTranslation();
+
   return (
     <aside className="h-screen border-r border-slate-200 bg-white px-3 py-4">
       <div className="mb-6 px-2 text-lg font-semibold">Aurora</div>
@@ -30,7 +35,7 @@ function Sidebar({ activePage, onPageChange }: SidebarProps) {
                 : "text-slate-600 hover:bg-slate-100 hover:text-slate-950",
             ].join(" ")}
           >
-            {page.label}
+            {t(page.label)}
           </button>
         ))}
       </nav>
