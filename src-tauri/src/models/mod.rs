@@ -1,3 +1,3 @@
+pub mod error;
 pub mod provider;
 pub mod settings;
-pub mod error;
