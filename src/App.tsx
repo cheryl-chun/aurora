@@ -9,6 +9,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import PopupPage from './pages/popup';
 import { invoke } from '@tauri-apps/api/core';
 import { defaultSettings, type AppSettings } from './types/settings';
+import i18n from './i18n';
 
 function App() {
   const [activePage, setActivePage] = useState<Page>('translate');
@@ -28,7 +29,10 @@ function App() {
     }
 
     invoke<AppSettings>('load_app_settings')
-      .then(setSettings)
+      .then(nextSettings => {
+        setSettings(nextSettings);
+        void i18n.changeLanguage(nextSettings.appLanguage);
+      })
       .catch(error => console.error('[settings] load failed', error));
 
     const unlistenPromise = currentWindow.onCloseRequested(async event => {
@@ -40,6 +44,11 @@ function App() {
       unlistenPromise.then(unlisten => unlisten());
     };
   }, []);
+
+  function handleSettingsChange(nextSettings: AppSettings) {
+    setSettings(nextSettings);
+    void i18n.changeLanguage(nextSettings.appLanguage);
+  }
 
   return (
     <>
@@ -58,7 +67,7 @@ function App() {
           </div>
 
           <div className={activePage === 'settings' ? 'block h-full' : 'hidden'}>
-            <SettingsPage settings={settings} onSettingsChange={setSettings} />
+            <SettingsPage settings={settings} onSettingsChange={handleSettingsChange} />
           </div>
 
           <div className={activePage === 'about' ? 'block h-full' : 'hidden'}>

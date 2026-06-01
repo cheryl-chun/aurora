@@ -1,9 +1,11 @@
+export type AppLanguage = 'zh-CN' | 'en';
 export type AppSettings = {
   selectionShortcut: string;
   appendSelectionShortcut: string;
   sourceLanguage: string;
   targetLanguage: string;
   showSourceText: boolean;
+  appLanguage: AppLanguage;
 };
 
 export const defaultSettings: AppSettings = {
@@ -12,4 +14,5 @@ export const defaultSettings: AppSettings = {
   sourceLanguage: 'auto',
   targetLanguage: 'zh-CN',
   showSourceText: false,
+  appLanguage: 'zh-CN',
 };

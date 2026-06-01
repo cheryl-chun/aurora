@@ -9,6 +9,8 @@
   "permissions": [
     "core:default",
     "opener:default",
+    "updater:default",
+    "process:allow-restart",
     "global-shortcut:allow-is-registered",
     "global-shortcut:allow-register",
     "global-shortcut:allow-unregister",

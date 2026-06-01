@@ -1,0 +1,12 @@
+{
+  "name": "Aurora",
+  "packageName": "aurora",
+  "productName": "aurora",
+  "version": "0.2.0",
+  "identifier": "com.cheryl.aurora",
+  "github": {
+    "owner": "cheryl-chun",
+    "repo": "aurora",
+    "url": "https://github.com/cheryl-chun/aurora"
+  }
+}
