@@ -225,15 +225,6 @@ function UpdatePanel({
           ? t('about.updateFailed')
           : t('about.updateChecking');
 
-  const description =
-    status === 'available'
-      ? t('about.updateAvailableDescription')
-      : status === 'latest'
-        ? t('about.updateLatestDescription')
-        : status === 'failed'
-          ? t('about.updateFailedDescription')
-          : t('about.updateCheckingDescription');
-
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex items-start justify-between gap-4">
@@ -251,8 +242,6 @@ function UpdatePanel({
 
             <span>{title}</span>
           </div>
-
-          <p className="mt-2 text-sm leading-6 text-slate-500">{description}</p>
         </div>
 
         <div className="flex shrink-0 items-center gap-2">

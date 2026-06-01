@@ -5,7 +5,6 @@ use crate::{
         popup::{publish_popup_payload, PopupPayload, PopupState},
         selection::capture_selected_text_inner,
     },
-    models::error::AppError,
     state::AppState,
     translator::{manager::TranslatorManager, types::TranslatorRequest},
 };
