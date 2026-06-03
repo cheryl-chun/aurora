@@ -1,8 +1,10 @@
 use crate::{
-    models::provider::ApiProvider,
-    translator::types::{Translator, TranslatorRequest},
+    models::{
+        error::{AppError, AppErrorCode, AppResult},
+        provider::ApiProvider,
+    },
+    translator::types::{TokenUsage, Translator, TranslatorRequest, TranslatorResponse},
 };
-use anyhow::{bail, Context, Result};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
@@ -22,6 +24,7 @@ struct ChatMessage {
 #[derive(Deserialize)]
 struct ChatResponse {
     choices: Vec<ChatChoice>,
+    usage: Option<ChatUsage>,
 }
 
 #[derive(Deserialize)]
@@ -32,6 +35,13 @@ struct ChatChoice {
 #[derive(Deserialize)]
 struct ChatResponseMessage {
     content: String,
+}
+
+#[derive(Deserialize)]
+struct ChatUsage {
+    prompt_tokens: Option<u32>,
+    completion_tokens: Option<u32>,
+    total_tokens: Option<u32>,
 }
 
 pub struct LlmTranslator {
@@ -47,15 +57,21 @@ impl LlmTranslator {
 
 #[async_trait]
 impl Translator for LlmTranslator {
-    async fn translate(&self, request: TranslatorRequest) -> Result<String> {
+    async fn translate(&self, request: TranslatorRequest) -> AppResult<TranslatorResponse> {
         let api_key = self.provider.api_key.trim();
         if api_key.is_empty() {
-            bail!("{} 缺少 API key", self.provider.name)
+            return Err(AppError::new(
+                AppErrorCode::ProviderConfigMissing,
+                format!("{} 缺少 API key", self.provider.name),
+            ));
         }
 
         let base_url = self.provider.base_url.trim();
         if base_url.is_empty() {
-            bail!("{} 缺少 Base URL", self.provider.name);
+            return Err(AppError::new(
+                AppErrorCode::ProviderConfigMissing,
+                format!("{} 缺少 Base URL", self.provider.name),
+            ));
         }
 
         let model = self
@@ -64,7 +80,7 @@ impl Translator for LlmTranslator {
             .as_deref()
             .map(str::trim)
             .filter(|value| !value.is_empty())
-            .context("LLM 缺少 Model")?
+            .ok_or_else(|| AppError::new(AppErrorCode::ProviderConfigMissing, "LLM 缺少 Model"))?
             .to_string();
 
         let prompt = render_prompt(
@@ -99,7 +115,13 @@ impl Translator for LlmTranslator {
             .json(&body)
             .send()
             .await
-            .with_context(|| format!("请求 {} 失败", self.provider.name))?;
+            .map_err(|error| {
+                AppError::with_details(
+                    AppErrorCode::ProviderRequestFailed,
+                    format!("请求 {} 失败", self.provider.name),
+                    error.to_string(),
+                )
+            })?;
 
         println!(
             "[llm] response provider={}, status={}",
@@ -116,13 +138,20 @@ impl Translator for LlmTranslator {
                 self.provider.name, status, body
             );
 
-            bail!("{} 返回错误: {} {}", self.provider.name, status, body);
+            return Err(AppError::with_details(
+                AppErrorCode::ProviderRequestFailed,
+                format!("{} 返回错误: {}", self.provider.name, status),
+                body,
+            ));
         }
 
-        let data = response
-            .json::<ChatResponse>()
-            .await
-            .with_context(|| format!("解析 {} 响应失败", self.provider.name))?;
+        let data = response.json::<ChatResponse>().await.map_err(|error| {
+            AppError::with_details(
+                AppErrorCode::ProviderResponseInvalid,
+                format!("解析 {} 响应失败", self.provider.name),
+                error.to_string(),
+            )
+        })?;
 
         println!("[llm] response parsed provider={}", self.provider.name);
 
@@ -131,10 +160,19 @@ impl Translator for LlmTranslator {
             .first()
             .map(|choice| choice.message.content.trim().to_string())
             .filter(|content| !content.is_empty())
-            .context("LLM 没有返回翻译内容")?;
+            .ok_or_else(|| AppError::new(AppErrorCode::TranslationEmpty, "LLM 没有返回翻译内容"))?;
+
+        let usage = data.usage.map(|usage| TokenUsage {
+            prompt_tokens: usage.prompt_tokens,
+            completion_tokens: usage.completion_tokens,
+            total_tokens: usage.total_tokens,
+        });
 
         println!("[llm] translated={}", translated);
-        Ok(translated)
+        Ok(TranslatorResponse {
+            content: translated,
+            usage,
+        })
     }
 }
 

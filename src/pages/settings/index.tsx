@@ -4,6 +4,7 @@ import type { AppLanguage, AppSettings } from '../../types/settings';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
+import { formatErrorMessage } from '../../utils/error';
 
 const languages = [
   { value: 'auto', labelKey: 'languages.auto' },
@@ -74,7 +75,7 @@ function SettingsPage({
       await invoke('save_app_settings', { appSettings: next });
       toast.success(t('settings.saved'));
     } catch (error) {
-      toast.error(t('settings.saveFailed', { message: String(error) }));
+      toast.error(t('settings.saveFailed', { message: formatErrorMessage(error) }));
     }
   }
 

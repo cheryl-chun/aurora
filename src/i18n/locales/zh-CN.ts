@@ -9,6 +9,12 @@ const zhCN = {
     empty: '空',
   },
 
+  usage: {
+    total: '总计 {{count}} tokens',
+    prompt: '输入 {{count}}',
+    completion: '输出 {{count}}',
+  },
+
   sidebar: {
     translate: '翻译',
     api: 'API',

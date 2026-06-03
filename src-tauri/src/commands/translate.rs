@@ -1,10 +1,13 @@
 use tauri::State;
 
 use crate::{
+    models::error::{AppError, AppErrorCode, AppResult},
     state::AppState,
-    translator::{manager::TranslatorManager, types::TranslatorRequest},
+    translator::{
+        manager::TranslatorManager,
+        types::{TranslatorRequest, TranslatorResponse},
+    },
 };
-use anyhow::{bail, Result};
 
 #[tauri::command]
 pub async fn translate_text(
@@ -13,7 +16,7 @@ pub async fn translate_text(
     text: String,
     source_language: Option<String>,
     target_language: Option<String>,
-) -> Result<String, String> {
+) -> AppResult<TranslatorResponse> {
     println!("[translate] command received, text length={}", text.len());
 
     translate_text_inner(
@@ -24,7 +27,6 @@ pub async fn translate_text(
         target_language,
     )
     .await
-    .map_err(|error| format!("{:#}", error))
 }
 
 async fn translate_text_inner(
@@ -33,14 +35,17 @@ async fn translate_text_inner(
     text: String,
     source_language: Option<String>,
     target_language: Option<String>,
-) -> Result<String> {
+) -> AppResult<TranslatorResponse> {
     let text = text.trim().to_string();
 
     if text.is_empty() {
-        bail!("请输入要翻译的文本")
+        return Err(AppError::new(
+            AppErrorCode::InvalidInput,
+            "请输入要翻译的文本",
+        ));
     }
 
-    let providers = app_state.providers().map_err(anyhow::Error::msg)?;
+    let providers = app_state.providers()?;
 
     translator_manager
         .translate(

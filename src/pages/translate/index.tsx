@@ -4,6 +4,9 @@ import { toast } from '../../utils/toast';
 import { useSelectionTranslateShortcut } from '../../hooks/useSelectionTranslateShortcut';
 import type { AppSettings } from '../../types/settings';
 import { useTranslation } from 'react-i18next';
+import type { TokenUsage, TranslateResponse } from '../../types/translate';
+import TokenUsageView from '../../components/TokenUsage';
+import { formatErrorMessage } from '../../utils/error';
 
 const languages = [
   { value: 'auto', label: '自动检测' },
@@ -21,6 +24,7 @@ function TranslatePage({ settings }: { settings: AppSettings }) {
   const [sourceText, setSourceText] = useState('');
   const [translatedText, setTranslatedText] = useState('');
   const [loading, setLoading] = useState(false);
+  const [usage, setUsage] = useState<TokenUsage | null>(null);
 
   const { t } = useTranslation();
 
@@ -45,18 +49,20 @@ function TranslatePage({ settings }: { settings: AppSettings }) {
     }
 
     setTranslatedText('');
+    setUsage(null);
     setLoading(true);
 
     try {
-      const result = await invoke<string>('translate_text', {
+      const result = await invoke<TranslateResponse>('translate_text', {
         text,
         sourceLanguage,
         targetLanguage,
       });
 
-      setTranslatedText(result);
+      setTranslatedText(result.content);
+      setUsage(result.usage ?? null);
     } catch (error) {
-      toast.error(t('toast.translateFailed', { message: String(error) }));
+      toast.error(t('toast.translateFailed', { message: formatErrorMessage(error) }));
     } finally {
       setLoading(false);
     }
@@ -72,12 +78,13 @@ function TranslatePage({ settings }: { settings: AppSettings }) {
       await navigator.clipboard.writeText(translatedText);
       toast.success(t('toast.copied'));
     } catch (error) {
-      toast.error(t('toast.translateFailed', { message: String(error) }));
+      toast.error(t('toast.translateFailed', { message: formatErrorMessage(error) }));
     }
   }
 
   function handleClear() {
     setSourceText('');
+    setUsage(null);
     setTranslatedText('');
   }
 
@@ -140,8 +147,11 @@ function TranslatePage({ settings }: { settings: AppSettings }) {
         </div>
 
         <div className="flex min-h-[420px] flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-          <div className="flex h-11 items-center justify-between border-b border-slate-100 px-4 text-sm text-slate-500">
-            <span>{t('translate.result')}</span>
+          <div className="flex h-11 items-center justify-between gap-3 border-b border-slate-100 px-4 text-sm text-slate-500">
+            <div className="flex min-w-0 items-center gap-3">
+              <span>{t('translate.result')}</span>
+              <TokenUsageView usage={usage} />
+            </div>
 
             <button
               type="button"
