@@ -1,7 +1,9 @@
 use std::sync::RwLock;
 
-use crate::models::provider::ApiProvider;
-use anyhow::Result;
+use crate::models::{
+    error::{AppError, AppErrorCode, AppResult},
+    provider::ApiProvider,
+};
 
 pub struct AppState {
     providers: RwLock<Vec<ApiProvider>>,
@@ -14,20 +16,26 @@ impl AppState {
         }
     }
 
-    pub fn providers(&self) -> Result<Vec<ApiProvider>> {
-        let providers = self
-            .providers
-            .read()
-            .map_err(|e| anyhow::anyhow!("读取 API 配置状态失败: {}", e))?;
+    pub fn providers(&self) -> AppResult<Vec<ApiProvider>> {
+        let providers = self.providers.read().map_err(|error| {
+            AppError::with_details(
+                AppErrorCode::StateReadFailed,
+                "读取 API 配置状态失败",
+                error.to_string(),
+            )
+        })?;
 
         Ok(providers.clone())
     }
 
-    pub fn replace_providers(&self, providers: Vec<ApiProvider>) -> Result<()> {
-        let mut providers_guard = self
-            .providers
-            .write()
-            .map_err(|e| anyhow::anyhow!("写入 API 配置状态失败: {}", e))?;
+    pub fn replace_providers(&self, providers: Vec<ApiProvider>) -> AppResult<()> {
+        let mut providers_guard = self.providers.write().map_err(|error| {
+            AppError::with_details(
+                AppErrorCode::StateWriteFailed,
+                "写入 API 配置状态失败",
+                error.to_string(),
+            )
+        })?;
 
         *providers_guard = sort_providers(providers);
 

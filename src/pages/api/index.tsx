@@ -20,6 +20,7 @@ import ProviderCard from "../../components/ProviderCard";
 import { PlusIcon, SaveIcon } from "../../components/icons";
 import { DEFAULT_TRANSLATION_PROMPT } from "../../constants/prompt";
 import { toast } from "../../utils/toast";
+import { formatErrorMessage } from "../../utils/error";
 
 function ApiPage() {
   const { t } = useTranslation();
@@ -42,7 +43,7 @@ function ApiPage() {
       const data = await invoke<ApiProvider[]>("load_api_providers");
       setProviders(data.sort((a, b) => a.priority - b.priority));
     } catch (error) {
-      toast.error(t("api.loadFailed", { message: String(error) }));
+      toast.error(t("api.loadFailed", { message: formatErrorMessage(error) }));
     }
   }
 
@@ -60,7 +61,7 @@ function ApiPage() {
       setProviders(normalized);
       toast.success(t("api.saveSuccess"));
     } catch (error) {
-      toast.error(t("api.saveFailed", { message: String(error) }));
+      toast.error(t("api.saveFailed", { message: formatErrorMessage(error) }));
     }
   }
 

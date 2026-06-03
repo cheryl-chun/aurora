@@ -5,9 +5,11 @@ use crate::{
         popup::{publish_popup_payload, PopupPayload, PopupState},
         selection::capture_selected_text_inner,
     },
+    models::error::{AppError, AppErrorCode, AppResult},
     state::AppState,
     translator::{manager::TranslatorManager, types::TranslatorRequest},
 };
+use anyhow::Error;
 
 #[tauri::command]
 pub async fn translate_selected_text_in_popup(
@@ -18,10 +20,11 @@ pub async fn translate_selected_text_in_popup(
     source_language: Option<String>,
     target_language: Option<String>,
     append: Option<bool>,
-) -> Result<(), String> {
+) -> AppResult<()> {
     let selected_text = match capture_selected_text_inner(app.clone()).await {
         Ok(text) => text,
         Err(error) => {
+            let app_error = selection_error(error);
             show_popup(&app)?;
             publish_popup_payload(
                 app,
@@ -30,11 +33,12 @@ pub async fn translate_selected_text_in_popup(
                     status: "error".to_string(),
                     source_text: None,
                     translated_text: None,
-                    error: Some(format!("{:#}", error)),
+                    usage: None,
+                    error: Some(app_error.message().to_string()),
                     mode: Some("replace".to_string()),
                 },
             )?;
-            return Err(format!("{:#}", error));
+            return Err(app_error);
         }
     };
 
@@ -60,14 +64,13 @@ pub async fn translate_selected_text_in_popup(
             status: "translating".to_string(),
             source_text: Some(source_text.clone()),
             translated_text: None,
+            usage: None,
             error: None,
             mode: Some(mode.clone()),
         },
     )?;
 
-    let providers = app_state
-        .providers()
-        .map_err(|error| format!("{:#}", error))?;
+    let providers = app_state.providers()?;
 
     match translator_manager
         .translate(
@@ -80,14 +83,15 @@ pub async fn translate_selected_text_in_popup(
         )
         .await
     {
-        Ok(translated_text) => {
+        Ok(response) => {
             publish_popup_payload(
                 app,
                 popup_state,
                 PopupPayload {
                     status: "done".to_string(),
                     source_text: Some(source_text),
-                    translated_text: Some(translated_text),
+                    translated_text: Some(response.content),
+                    usage: response.usage,
                     error: None,
                     mode: Some(mode),
                 },
@@ -96,7 +100,7 @@ pub async fn translate_selected_text_in_popup(
             Ok(())
         }
         Err(error) => {
-            let error = format!("{:#}", error);
+            let message = error.message().to_string();
 
             publish_popup_payload(
                 app,
@@ -105,7 +109,8 @@ pub async fn translate_selected_text_in_popup(
                     status: "error".to_string(),
                     source_text: Some(source_text),
                     translated_text: None,
-                    error: Some(error.clone()),
+                    usage: None,
+                    error: Some(message),
                     mode: Some(mode),
                 },
             )?;
@@ -115,15 +120,42 @@ pub async fn translate_selected_text_in_popup(
     }
 }
 
-fn show_popup(app: &AppHandle) -> Result<(), String> {
+fn show_popup(app: &AppHandle) -> AppResult<()> {
     let window = app
         .get_webview_window("translate-popup")
-        .ok_or_else(|| "翻译弹窗尚未创建".to_string())?;
+        .ok_or_else(|| AppError::new(AppErrorCode::PopupWindowNotFound, "翻译弹窗尚未创建"))?;
 
-    window.show().map_err(|error| error.to_string())?;
-    window.set_focus().map_err(|error| error.to_string())?;
+    window.show().map_err(|error| {
+        AppError::with_details(
+            AppErrorCode::WindowOperationFailed,
+            "显示翻译弹窗失败",
+            error.to_string(),
+        )
+    })?;
+
+    window.set_focus().map_err(|error| {
+        AppError::with_details(
+            AppErrorCode::WindowOperationFailed,
+            "聚焦翻译弹窗失败",
+            error.to_string(),
+        )
+    })?;
 
     Ok(())
+}
+
+fn selection_error(error: Error) -> AppError {
+    let details = format!("{:#}", error);
+
+    if details.contains("没有选取文本") {
+        return AppError::with_details(AppErrorCode::NoSelectedText, "没有选取文本", details);
+    }
+
+    AppError::with_details(
+        AppErrorCode::ClipboardReadFailed,
+        "读取选区文本失败",
+        details,
+    )
 }
 
 fn join_fragments(old: &str, next: &str) -> String {

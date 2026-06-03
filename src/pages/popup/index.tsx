@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
@@ -7,11 +7,15 @@ import { Pin, PinOff } from 'lucide-react';
 import Toast from '../../components/Toast';
 import { defaultSettings, type AppSettings } from '../../types/settings';
 import { useTranslation } from 'react-i18next';
+import TokenUsageView from '../../components/TokenUsage';
+import type { TokenUsage } from '../../types/translate';
+import { formatErrorMessage } from '../../utils/error';
 
 type PopupPayload = {
   status: 'translating' | 'done' | 'error';
   sourceText?: string;
   translatedText?: string;
+  usage?: TokenUsage | null;
   error?: string;
 };
 
@@ -30,6 +34,7 @@ function PopupPage() {
   const [pinned, setPinned] = useState(false);
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
   const appWindow = getCurrentWindow();
+  const internalInteractionRef = useRef(false);
 
   const { t } = useTranslation();
 
@@ -63,10 +68,12 @@ function PopupPage() {
       setPayload(null);
     });
 
-    const unlistenPromise = appWindow.onFocusChanged(async ({ payload }) => {
-      if (!payload && !pinned) {
-        await closePopup();
+    const unlistenPromise = appWindow.listen('tauri://blur', async () => {
+      if (pinned || internalInteractionRef.current) {
+        return;
       }
+
+      await closePopup();
     });
 
     loadSnapshot();
@@ -92,7 +99,7 @@ function PopupPage() {
       toast.success(t('popup.copied'));
     } catch (error) {
       console.error('[popup] copy failed', error);
-      toast.error(t('popup.copyFailed', { message: String(error) }));
+      toast.error(t('popup.copyFailed', { message: formatErrorMessage(error) }));
     }
   }
 
@@ -105,6 +112,8 @@ function PopupPage() {
   }
 
   async function handleStartDrag() {
+    markInternalInteraction();
+
     try {
       await appWindow.startDragging();
     } catch (error) {
@@ -122,11 +131,22 @@ function PopupPage() {
     }
   }
 
+  function markInternalInteraction() {
+    internalInteractionRef.current = true;
+
+    window.setTimeout(() => {
+      internalInteractionRef.current = false;
+    }, 400);
+  }
+
   return (
     <>
       <Toast />
 
-      <main className="relative h-screen overflow-hidden rounded-lg bg-white text-slate-950 shadow-xl">
+      <main
+        onMouseDown={markInternalInteraction}
+        className="relative h-screen overflow-hidden rounded-lg bg-white text-slate-950 shadow-xl"
+      >
         <div className="flex h-full flex-col">
           <header className="flex h-12 items-center border-b border-slate-100 bg-white">
             <div
@@ -186,7 +206,12 @@ function PopupPage() {
 
                 {payload.status === 'translating' && <LoadingText text={t('popup.translating')} />}
 
-                {payload.status === 'done' && <TextBlock text={payload.translatedText ?? ''} />}
+                {payload.status === 'done' && (
+                  <div className="grid gap-2">
+                    <TextBlock text={payload.translatedText ?? ''} />
+                    <TokenUsageView usage={payload.usage} />
+                  </div>
+                )}
 
                 {payload.status === 'error' && (
                   <div className="rounded-md bg-red-50 p-3 text-sm leading-6 text-red-700">

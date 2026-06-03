@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from '../../utils/toast';
 import auroraIcon from '../../assets/aurora-icon.png';
 import { PROJECT } from '../../constants/project';
+import { formatErrorMessage } from '../../utils/error';
 
 type UpdateStatus = 'checking' | 'available' | 'latest' | 'failed';
 
@@ -50,7 +51,7 @@ function AboutPage() {
     try {
       await openUrl(PROJECT.github.url);
     } catch (error) {
-      toast.error(t('about.openFailed', { message: String(error) }));
+      toast.error(t('about.openFailed', { message: formatErrorMessage(error) }));
     }
   }
 
@@ -84,7 +85,7 @@ function AboutPage() {
       setUpdateStatus('failed');
 
       if (!options?.silent) {
-        toast.error(t('about.updateCheckFailed', { message: String(error) }));
+        toast.error(t('about.updateCheckFailed', { message: formatErrorMessage(error) }));
       }
     } finally {
       setCheckingUpdate(false);
@@ -106,7 +107,7 @@ function AboutPage() {
       toast.success(t('about.updateInstalled'));
       await relaunch();
     } catch (error) {
-      toast.error(t('about.updateInstallFailed', { message: String(error) }));
+      toast.error(t('about.updateInstallFailed', { message: formatErrorMessage(error) }));
       setInstallingUpdate(false);
     }
   }

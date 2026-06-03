@@ -9,6 +9,12 @@ const en = {
     empty: 'Empty',
   },
 
+  usage: {
+    total: '{{count}} tokens',
+    prompt: 'Prompt {{count}}',
+    completion: 'Completion {{count}}',
+  },
+
   sidebar: {
     translate: 'Translate',
     api: 'API',

@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { isRegistered, register, unregister } from '@tauri-apps/plugin-global-shortcut';
 import { toast } from '../utils/toast';
+import { formatErrorMessage } from '../utils/error';
 
 type Options = {
   sourceLanguage: string;
@@ -56,7 +57,7 @@ export function useSelectionTranslateShortcut(options: Options) {
       } catch (error) {
         console.error('[selection-shortcut] failed', error);
 
-        toast.error(`划词翻译失败：${String(error)}`);
+        toast.error(`划词翻译失败：${formatErrorMessage(error)}`);
       } finally {
         runningRef.current = false;
         log('done');
@@ -91,7 +92,7 @@ export function useSelectionTranslateShortcut(options: Options) {
         }
       } catch (error) {
         console.error('[selection-shortcut] register failed', error);
-        toast.error(`注册快捷键失败：${String(error)}`);
+        toast.error(`注册快捷键失败：${formatErrorMessage(error)}`);
       }
     }
 

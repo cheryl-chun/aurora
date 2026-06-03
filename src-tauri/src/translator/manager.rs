@@ -1,10 +1,15 @@
 use std::time::Duration;
 
 use crate::{
-    models::provider::ApiProvider,
-    translator::{factory::TranslatorFactory, types::TranslatorRequest},
+    models::{
+        error::{AppError, AppErrorCode, AppResult},
+        provider::ApiProvider,
+    },
+    translator::{
+        factory::TranslatorFactory,
+        types::{TranslatorRequest, TranslatorResponse},
+    },
 };
-use anyhow::{bail, Result};
 
 pub struct TranslatorManager {
     client: reqwest::Client,
@@ -25,14 +30,17 @@ impl TranslatorManager {
         &self,
         providers: Vec<ApiProvider>,
         request: TranslatorRequest,
-    ) -> Result<String> {
+    ) -> AppResult<TranslatorResponse> {
         let enabled_providers = providers
             .into_iter()
             .filter(|p| p.enabled)
             .collect::<Vec<_>>();
 
         if enabled_providers.is_empty() {
-            anyhow::bail!("没有启用的 API 配置");
+            return Err(AppError::new(
+                AppErrorCode::NoEnabledProvider,
+                "没有启用的 API 配置",
+            ));
         }
 
         let mut errors = Vec::new();
@@ -43,7 +51,7 @@ impl TranslatorManager {
             let translator = match TranslatorFactory::create(provider, self.client.clone()) {
                 Ok(translator) => translator,
                 Err(error) => {
-                    errors.push(format!("{}: {:#}", name, error));
+                    errors.push(format!("{}: {}", name, error.message()));
                     continue;
                 }
             };
@@ -51,11 +59,15 @@ impl TranslatorManager {
             match translator.translate(request.clone()).await {
                 Ok(result) => return Ok(result),
                 Err(error) => {
-                    errors.push(format!("{}: {:#}", name, error));
+                    errors.push(format!("{}: {}", name, error.message()));
                 }
             }
         }
 
-        bail!("所有翻译器都失败: \n{}", errors.join("\n"))
+        Err(AppError::with_details(
+            AppErrorCode::ProviderRequestFailed,
+            "所有翻译器都失败",
+            errors.join("\n"),
+        ))
     }
 }
